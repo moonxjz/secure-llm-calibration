@@ -1,0 +1,23 @@
+.env
+__pycache__/
+*.py[cod]
+
+.DS_Store
+
+# Local experiment artifacts
+logs/
+runs/
+runs_1/
+data/runs*/
+data/ablation/
+data/hparam/
+data/*_responses.csv
+data/*_metrics.csv
+data/benchmark_scale.log
+
+# Virtual environments
+.venv/
+venv/
+
+# Optional private planning notes
+plans/

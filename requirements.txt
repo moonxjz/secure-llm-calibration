@@ -1,0 +1,9 @@
+python-dotenv
+openai
+pandas
+numpy
+datasets
+openpyxl
+psutil
+transformers
+optimum[onnxruntime-gpu]
