@@ -11,7 +11,8 @@ model.to(device)
 # Conservative cap avoids ONNX shape expansion failures on long prompts.
 MAX_LENGTH = 512
 
-def pipeline(text: str) -> tuple[str, int]:
+def pipeline(text: str) -> tuple[str, int, float]:
+    """Return (label_str, label_int, attack_probability)."""
     try:
         inputs = tokenizer(
             text,
@@ -26,11 +27,12 @@ def pipeline(text: str) -> tuple[str, int]:
             logits = outputs.logits
             probs = F.softmax(logits, dim=-1)
             predicted_label = torch.argmax(probs, dim=-1).item()
+            attack_prob = float(probs[0][1].item())
 
         label_map = {0: "safe", 1: "unsafe"}
         prediction = label_map[predicted_label]
-        return prediction, predicted_label
+        return prediction, predicted_label, attack_prob
     except Exception:
         # Fail-open to safe so the LLM stage can still classify.
-        return "safe", 0
+        return "safe", 0, 0.5
         

@@ -96,12 +96,49 @@ def read_guard_prompt(path: Path) -> str:
         raise RuntimeError(f"Guard prompt not found at {path}") from exc
 
 
-def load_datasets(paths: List[Path], limit: int | None) -> pd.DataFrame:
+def _sample_frame(df: pd.DataFrame, limit: int, seed: int, label_col: str | None) -> pd.DataFrame:
+    """Sample up to `limit` rows, preserving label balance when labels are available."""
+    if limit <= 0 or len(df) <= limit:
+        return df.reset_index(drop=True)
+    if label_col is None or label_col not in df.columns:
+        return df.sample(n=limit, random_state=seed).reset_index(drop=True)
+
+    work = df.reset_index(drop=True).copy()
+    work["_label_for_sampling"] = work[label_col].astype(int)
+    groups = [group for _, group in work.groupby("_label_for_sampling")]
+    if len(groups) < 2:
+        return work.drop(columns=["_label_for_sampling"]).sample(n=limit, random_state=seed).reset_index(drop=True)
+
+    base = limit // len(groups)
+    remainder = limit % len(groups)
+    samples = []
+    used_indices = set()
+    for idx, group in enumerate(groups):
+        target = base + (1 if idx < remainder else 0)
+        sample = group.sample(n=min(target, len(group)), random_state=seed + idx)
+        samples.append(sample)
+        used_indices.update(sample.index.tolist())
+
+    sampled = pd.concat(samples, ignore_index=False)
+    if len(sampled) < limit:
+        remaining = work.drop(index=list(used_indices), errors="ignore")
+        if not remaining.empty:
+            extra = remaining.sample(n=min(limit - len(sampled), len(remaining)), random_state=seed + 997)
+            sampled = pd.concat([sampled, extra], ignore_index=False)
+
+    return (
+        sampled.drop(columns=["_label_for_sampling"], errors="ignore")
+        .sample(frac=1.0, random_state=seed)
+        .reset_index(drop=True)
+    )
+
+
+def load_datasets(paths: List[Path], limit: int | None, seed: int = 42) -> pd.DataFrame:
     """
     Load multiple datasets and normalize to: id, Question, is_attack, Category.
     - If column 'Attack Type' exists: benign -> 0 else 1.
     - Else if column 'Gold Answer' or 'Answer' exists: use it as label (cast to int).
-    - If limit is set, apply per dataset (keeps all categories present).
+    - If limit is set, apply seeded stratified sampling per dataset.
     """
     frames: List[pd.DataFrame] = []
     for path in paths:
@@ -110,18 +147,21 @@ def load_datasets(paths: List[Path], limit: int | None) -> pd.DataFrame:
         df = pd.read_csv(path)
         if "Question" not in df.columns:
             raise RuntimeError(f"Dataset {path} missing 'Question' column")
-        if limit is not None:
-            df = df.head(limit)
 
         if "Attack Type" in df.columns:
-            is_attack = (df["Attack Type"].astype(str).str.lower() != "benign").astype(int)
+            df["_is_attack"] = (df["Attack Type"].astype(str).str.lower() != "benign").astype(int)
+            label_col = "_is_attack"
         elif "Gold Answer" in df.columns:
-            is_attack = df["Gold Answer"].astype(int)
+            label_col = "Gold Answer"
         elif "Answer" in df.columns:
-            is_attack = df["Answer"].astype(int)
+            label_col = "Answer"
         else:
             raise RuntimeError(f"Dataset {path} missing label column ('Attack Type', 'Gold Answer', or 'Answer')")
 
+        if limit is not None:
+            df = _sample_frame(df, limit=limit, seed=seed, label_col=label_col)
+
+        is_attack = df[label_col].astype(int)
         category = df["Scenario"] if "Scenario" in df.columns else path.stem
         frames.append(pd.DataFrame({"Question": df["Question"], "is_attack": is_attack, "Category": category}))
 
@@ -273,7 +313,7 @@ def parse_binary_label_with_reason(text: str) -> tuple[int, str]:
 
 
 def extract_confidence(response: Any, predicted_label: int) -> float:
-    """Extract attack probability confidence from first token logprob when available."""
+    """Extract confidence in the predicted class from first-token logprob when available."""
     try:
         choices = getattr(response, "choices", None)
         if not choices:
@@ -294,21 +334,21 @@ def extract_confidence(response: Any, predicted_label: int) -> float:
         if token_text == "1":
             return max(0.0, min(1.0, prob))
         if token_text == "0":
-            return max(0.0, min(1.0, 1.0 - prob))
-        return float(predicted_label)
+            return max(0.0, min(1.0, prob))
+        return 0.5
     except Exception:
         return 0.5
 
 
-def compute_ece(confidences: List[float], labels: List[int], n_bins: int = 15) -> float:
-    """Compute Expected Calibration Error with equal-width bins."""
-    if not confidences or not labels:
+def compute_ece(confidences: List[float], correct: List[int], n_bins: int = 15) -> float:
+    """Compute Expected Calibration Error from prediction confidence vs correctness."""
+    if not confidences or not correct:
         return 0.0
 
     import numpy as np
 
     confs = np.array(confidences, dtype=float)
-    labs = np.array(labels, dtype=int)
+    labs = np.array(correct, dtype=int)
     ece = 0.0
     bin_edges = np.linspace(0.0, 1.0, n_bins + 1)
     for i in range(n_bins):
@@ -395,7 +435,7 @@ def extract_text(response: Any) -> str:
 
 
 def extract_confidence_from_text(text: str, predicted_label: int) -> float:
-    """Extract attack probability from model text; robust to non-strict JSON output."""
+    """Extract confidence in the predicted class from model text."""
     try:
         stripped = str(text).strip()
         if stripped.startswith("```"):
@@ -408,12 +448,8 @@ def extract_confidence_from_text(text: str, predicted_label: int) -> float:
         # First, try strict JSON contract: {"label": <0|1>, "confidence": <0..1>}
         obj = json.loads(stripped)
         conf = obj.get("confidence", None)
-        lbl = obj.get("label", predicted_label)
         if conf is not None:
-            value = max(0.0, min(1.0, float(conf)))
-            label_int = 1 if int(lbl) == 1 else 0
-            # ECE expects probability of attack class.
-            return value if label_int == 1 else (1.0 - value)
+            return max(0.0, min(1.0, float(conf)))
     except Exception:
         pass
 
@@ -425,7 +461,7 @@ def extract_confidence_from_text(text: str, predicted_label: int) -> float:
         is_percent = match.group(2) == "%"
         conf = raw_val / 100.0 if is_percent else raw_val
         conf = max(0.0, min(1.0, conf))
-        return conf if int(predicted_label) == 1 else (1.0 - conf)
+        return conf
 
     # Non-probabilistic outputs (digit/keyword/default) -> neutral confidence.
     return 0.5
@@ -569,6 +605,7 @@ def run_mode(
                         f"{mode_name}__{model}": pred,
                         f"{mode_name}__{model}_source": "llm",
                         f"{mode_name}__{model}_parse": parse_reason,
+                        f"{mode_name}__{model}_confidence": confidence,
                     }
                 )
                 if store_raw:
@@ -611,7 +648,7 @@ def run_mode(
                         "(did you install torch?)."
                     ) from exc
                 try:
-                    _, pred = pipeline(prompt)
+                    _, pred, confidence = pipeline(prompt)
                     pred_source = "gentel"
                     parse_reason = "gentel"
                 except Exception as gentel_exc:
@@ -732,7 +769,9 @@ def run_mode(
                             )
                         raw = extract_text(result)
                         pred, parse_reason = parse_binary_label_with_reason(raw)
-                        confidence = extract_confidence(result, pred)
+                        confidence = extract_confidence_from_text(raw, pred)
+                        if confidence == 0.5:
+                            confidence = extract_confidence(result, pred)
                 except Exception as exc:  # pragma: no cover - defensive logging
                     if "content_filter" in str(exc).lower():
                         stats_local["content_filter_events"] += 1
@@ -756,6 +795,7 @@ def run_mode(
                     f"{mode_name}__{model}": pred,
                     f"{mode_name}__{model}_source": pred_source,
                     f"{mode_name}__{model}_parse": parse_reason,
+                    f"{mode_name}__{model}_confidence": confidence,
                 }
             )
             if store_raw:
@@ -850,7 +890,8 @@ def run_mode(
         # overall
         precision, recall, f1 = evaluate_binary(responses_per_model[model], gold_labels[model])
         accuracy = compute_accuracy(responses_per_model[model], gold_labels[model])
-        ece = compute_ece(confidences_per_model[model], gold_labels[model])
+        correct = [int(p) == int(g) for p, g in zip(responses_per_model[model], gold_labels[model])]
+        ece = compute_ece(confidences_per_model[model], correct)
         mem_list = mem_per_model[model]
         metrics_records.append(
             {
@@ -883,7 +924,8 @@ def run_mode(
             confs_cat = confidences_per_model_cat[model].get(cat, [])
             if len(confs_cat) != len(labels):
                 confs_cat = confs_cat[: len(labels)]
-            ece_c = compute_ece(confs_cat, labels) if labels else 0.0
+            correct_c = [int(p) == int(g) for p, g in zip(preds_cat, labels)]
+            ece_c = compute_ece(confs_cat, correct_c) if labels else 0.0
             mem_list_cat = mem_per_model_cat[model].get(cat, [])
             metrics_records.append(
                 {
@@ -955,7 +997,13 @@ def parse_args() -> argparse.Namespace:
         "--limit",
         type=int,
         default=None,
-        help="Limit number of rows for a quick test (default: all rows).",
+        help="Seeded stratified row limit per dataset (default: all rows).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for dataset sampling when --limit is set.",
     )
     parser.add_argument(
         "--output-dir",
@@ -1012,9 +1060,14 @@ def main() -> None:
     os.environ["EXPERIMENT_BACKEND"] = args.backend
 
     dataset_paths = [Path(p) for p in args.datasets]
-    dataset = load_datasets(dataset_paths, args.limit)
+    dataset = load_datasets(dataset_paths, args.limit, seed=args.seed)
 
-    outputs: List[Path] = []
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = args.output_dir / "dataset_manifest.json"
+    dataset.groupby(["Category", "is_attack"]).size().reset_index(name="rows").to_json(
+        manifest_path, orient="records", indent=2
+    )
+    outputs: List[Path] = [manifest_path]
     def run(gentel=args.gentel):
         if args.mode in {"pure", "both"}:
             pure_clients = build_clients(system_prompt=PURE_SYSTEM_PROMPT)

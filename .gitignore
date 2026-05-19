@@ -21,3 +21,21 @@ venv/
 
 # Optional private planning notes
 plans/
+
+# All experiment run directories
+runs_*/
+*runs_/*
+results/
+progress/
+feedback/
+data/
+
+# Paper source (not committed)
+paper/
+
+# Generated markdown files (not committed — README.md is the exception)
+*.md
+!README.md
+
+# Experiment log files
+experiment_log_*.txt
