@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trustworthy Deployment of LLM-Based RAG Systems for Small Businesses</title>
+<meta name="description" content="A security and confidence-aware framework for deploying LLM-based RAG systems in small and medium-sized enterprises: layered prompt-injection defence combined with calibrated confidence outputs.">
+
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="#top">Secure &amp; Calibrated RAG Deployment</a>
+    <div class="nav-links">
+      <a href="#abstract"><span class="nav-text">Abstract</span></a>
+      <a href="#framework"><span class="nav-text">Framework</span></a>
+      <a href="#datasets"><span class="nav-text">Datasets</span></a>
+      <a href="#results"><span class="nav-text">Results</span></a>
+      <a href="#citation"><span class="nav-text">Citation</span></a>
+      <a class="nav-cta" href="https://github.com/Aisuko/secure-llm-calibration" target="_blank" rel="noopener">Code</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="petal-canvas" aria-hidden="true"></canvas>
+  <div class="container">
+    <span class="eyebrow"><span class="dot"></span> Preprint &middot; Currently Under Review</span>
+    <h1>Trustworthy Deployment of LLM-Based RAG Systems for Small Businesses: A Security and Confidence-Aware Framework</h1>
+    <p class="subtitle">
+      A layered prompt-injection defence combined with structured, calibrated confidence
+      outputs — evaluated on a real-world e-commerce customer-support deployment under
+      realistic SME infrastructure constraints.
+    </p>
+    <p class="authors-note"><strong>Authors:</strong> see the paper</p>
+
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://github.com/Aisuko/secure-llm-calibration" target="_blank" rel="noopener">
+        View Code on GitHub
+      </a>
+      <a class="btn btn-secondary" href="#framework">Explore the Framework</a>
+      <span class="btn btn-disabled" title="Manuscript is currently under review">Paper — available upon publication</span>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="value">0.994</span>
+        <span class="label">Best F1 (layered defence)</span>
+      </div>
+      <div class="stat">
+        <span class="value">&asymp;0.01</span>
+        <span class="label">ECE, Guard+GTS on Real&#8209;PI / HF&#8209;D</span>
+      </div>
+      <div class="stat">
+        <span class="value">3</span>
+        <span class="label">LLM backends evaluated</span>
+      </div>
+      <div class="stat">
+        <span class="value">6</span>
+        <span class="label">Prompt-injection benchmarks</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="block" id="abstract">
+    <div class="container">
+      <span class="eyebrow-light">Abstract</span>
+      <h2>System-level trustworthiness for SME RAG deployments</h2>
+      <p>
+        Large Language Model (LLM)-based agentic systems are increasingly adopted by small and
+        medium-sized enterprises (SMEs) for customer support and internal knowledge workflows.
+        However, practical deployment of retrieval-augmented generation (RAG) systems remains
+        challenging due to prompt-injection risks, unreliable confidence estimation, and limited
+        operational resources in real-world SME environments. This paper presents a secure and
+        confidence-aware deployment framework for SME-oriented RAG systems. The proposed platform
+        integrates layered prompt-injection defences with structured confidence-aware outputs to
+        support more reliable and controlled agentic behaviour during deployment. Rather than
+        treating trustworthiness as a model-level metric, we frame it as a system-level property
+        emerging from the interaction between security filtering, confidence handling, and
+        downstream response control.
+      </p>
+      <p>
+        We evaluate the framework through a real-world e-commerce customer-support deployment
+        operating under realistic SME infrastructure constraints. Experimental results demonstrate
+        that structured prompting substantially improves confidence calibration while maintaining
+        strong prompt-injection detection performance (F1&nbsp;=&nbsp;0.994 with layered defences).
+        The calibrated confidence signals provide useful uncertainty information that may support
+        confidence-aware response handling during deployment. Results across both in-domain and
+        out-of-domain prompt-injection benchmarks indicate that combining layered security filtering
+        with confidence-aware deployment mechanisms can reduce the risk of overconfident and unsafe
+        responses while remaining practical for lightweight SME infrastructure environments.
+      </p>
+      <p>
+        Overall, the findings suggest that trustworthiness in deployed RAG systems should be
+        considered a system-level property shaped by the interaction between security,
+        calibration, and response-control mechanisms rather than by model capability alone.
+      </p>
+      <div class="keywords">
+        <span>Large Language Models</span>
+        <span>Retrieval-Augmented Generation</span>
+        <span>Agentic Platform</span>
+        <span>Prompt Injection</span>
+        <span>Secure Deployment</span>
+        <span>Confidence Calibration</span>
+        <span>Small and Medium-Sized Enterprises</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="framework">
+    <div class="container">
+      <span class="eyebrow-light">Framework</span>
+      <h2>A lightweight, layered platform for secure &amp; calibrated deployment</h2>
+      <p class="lede">
+        The platform routes SME requests through a k3s-based lightweight infrastructure into a
+        secure, calibrated RAG pipeline: a guard-prompt and GenTel-Shield security layer, retrieval
+        and tool access, LLM generation, structured JSON output, and a confidence-evaluation stage
+        that produces a calibrated score for downstream response control.
+      </p>
+
+      <div class="figure-grid">
+        <figure>
+          <picture>
+            <source srcset="assets/img/platform-workflow.webp" type="image/webp">
+            <img src="assets/img/platform-workflow.png" alt="Platform workflow: user request flows through load balancer and k3s infrastructure into the secure and calibrated RAG pipeline, ending in confidence-evaluated output." loading="lazy" width="1400" height="933">
+          </picture>
+          <figcaption><strong>Deployment pipeline.</strong> Requests are routed through a lightweight k3s cluster into a five-stage secure &amp; calibrated RAG pipeline: security guard layer, retrieval &amp; tools, LLM generation, structured output, and confidence evaluation.</figcaption>
+        </figure>
+        <figure>
+          <picture>
+            <source srcset="assets/img/architecture-overview.webp" type="image/webp">
+            <img src="assets/img/architecture-overview.png" alt="Agentic RAG platform architecture: API server, controller manager and scheduler coordinate isolated containers for frontend, agent orchestrator and knowledge base." loading="lazy" width="1400" height="536">
+          </picture>
+          <figcaption><strong>Platform architecture.</strong> A control plane coordinates isolated containers (frontend, agent orchestrator, knowledge base) behind a five-step agentic RAG workflow, from user query to confidence-based output.</figcaption>
+        </figure>
+      </div>
+
+      <h2 style="margin-top:56px;">Layered prompt-injection defence</h2>
+      <p class="lede">
+        Four configurations isolate the contribution of each defence layer: a structured guard
+        prompt (classification rules, in-context examples, calibration guidance) and the
+        pre-trained <a href="https://huggingface.co/GenTelLab/gentelshield-v1" target="_blank" rel="noopener">GenTel-Shield</a>
+        injection detector.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Method</th><th class="center">Guard Prompt</th><th class="center">GenTel-Shield</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pure LLM</td><td class="center dash">&mdash;</td><td class="center dash">&mdash;</td></tr>
+            <tr><td>Pure LLM + GenTel-Shield</td><td class="center dash">&mdash;</td><td class="center check">&#10003;</td></tr>
+            <tr><td>Guard Prompts</td><td class="center check">&#10003;</td><td class="center dash">&mdash;</td></tr>
+            <tr class="highlight"><td>Guard + GTS (ours)</td><td class="center check">&#10003;</td><td class="center check">&#10003;</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="datasets">
+    <div class="container">
+      <span class="eyebrow-light">Datasets &amp; Models</span>
+      <h2>Evaluated across in-domain and out-of-domain benchmarks</h2>
+      <p class="lede">
+        Each dataset is balanced to equal benign / attack samples. Main results use 100
+        stratified rows per seed over seeds {42, 1337, 2026}.
+      </p>
+
+      <div class="two-col">
+        <div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Dataset</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>ATS&#8209;CS</td><td>ATS Customer Support (AI-generated)</td></tr>
+                <tr><td>ATS&#8209;EC</td><td>ATS E-commerce (AI-generated)</td></tr>
+                <tr><td>ATS&#8209;GK</td><td>ATS General Knowledge (AI-generated)</td></tr>
+                <tr><td>Real&#8209;PI</td><td>Real Prompt Injections (public)</td></tr>
+                <tr><td>HF&#8209;D</td><td>HF Deepset, out-of-domain split</td></tr>
+                <tr><td>HF&#8209;M</td><td>HF Multilingual attacks</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Model</th><th>Backend</th></tr></thead>
+              <tbody>
+                <tr><td>GPT-4.1-mini</td><td>Azure OpenAI</td></tr>
+                <tr><td>GPT-4.1</td><td>Azure OpenAI</td></tr>
+                <tr><td>Qwen2.5-1.5B-Instruct</td><td>Local HuggingFace</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="results">
+    <div class="container">
+      <span class="eyebrow-light">Results</span>
+      <h2>Guard prompting drives calibration; layering drives detection</h2>
+      <p class="lede">
+        On Real-PI and HF-D, Guard&nbsp;+&nbsp;GTS reduces ECE to roughly 0.01 for both GPT
+        models while sustaining near-perfect exact-match accuracy — GenTel-Shield alone often
+        improves detection but destabilises calibration, whereas the combination of guard
+        prompting and detection is consistently strongest.
+      </p>
+
+      <ul class="findings">
+        <li>Guard&nbsp;+&nbsp;GTS achieves the strongest overall balance of detection accuracy (EM) and calibration (ECE) across GPT-4.1-mini and GPT-4.1.</li>
+        <li>GenTel-Shield alone does not consistently improve calibration: it filters easier attacks first, leaving a harder residual subset that worsens ECE.</li>
+        <li>The multilingual HF-M benchmark remains the hardest out-of-domain case, with higher ECE despite strong EM under Guard+GTS.</li>
+        <li>Qwen2.5-1.5B shows weaker and less stable calibration than the GPT backends, indicating capacity-dependent limits to prompt-only calibration.</li>
+      </ul>
+
+      <h2 style="margin-top:56px;">Ablation: guard-prompt components</h2>
+      <p class="lede">Real-PI, GPT-4.1, mean &plusmn; std over seeds {42, 1337, 2026}, 50 rows/seed.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Variant</th><th class="center">Rules</th><th class="center">ICL</th><th class="center">Calib.</th><th class="center">EM &uarr;</th><th class="center">ECE &darr;</th></tr>
+          </thead>
+          <tbody>
+            <tr class="highlight"><td>P1 &mdash; Full (ours)</td><td class="center check">&#10003;</td><td class="center check">&#10003;</td><td class="center check">&#10003;</td><td class="center">0.873 &plusmn; 0.021</td><td class="center">0.099 &plusmn; 0.018</td></tr>
+            <tr><td>P2 &mdash; No Rules</td><td class="center dash">&#10007;</td><td class="center check">&#10003;</td><td class="center check">&#10003;</td><td class="center">0.847 &plusmn; 0.041</td><td class="center">0.128 &plusmn; 0.033</td></tr>
+            <tr><td>P4 &mdash; No Calibration</td><td class="center check">&#10003;</td><td class="center check">&#10003;</td><td class="center dash">&#10007;</td><td class="center">0.860 &plusmn; 0.033</td><td class="center">0.121 &plusmn; 0.026</td></tr>
+            <tr><td>P3 &mdash; No ICL / No Calibration</td><td class="center check">&#10003;</td><td class="center dash">&#10007;</td><td class="center dash">&#10007;</td><td class="center">0.820 &plusmn; 0.028</td><td class="center">0.148 &plusmn; 0.024</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 style="margin-top:56px;">Hyperparameter: number of ICL examples</h2>
+      <p class="lede">Same setup; only the number of few-shot demonstrations varies.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Variant</th><th class="center"># ICL Examples</th><th class="center">EM &uarr;</th><th class="center">ECE &darr;</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>H1</td><td class="center">0</td><td class="center">0.820 &plusmn; 0.028</td><td class="center">0.148 &plusmn; 0.024</td></tr>
+            <tr><td>H2</td><td class="center">5</td><td class="center">0.860 &plusmn; 0.033</td><td class="center">0.112 &plusmn; 0.025</td></tr>
+            <tr class="highlight"><td>H3 (ours)</td><td class="center">10</td><td class="center">0.873 &plusmn; 0.021</td><td class="center">0.099 &plusmn; 0.018</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-grid" style="margin-top:44px;">
+        <div class="card">
+          <span class="metric-label">Metric: EM</span>
+          <span class="metric">Exact-Match</span>
+          <p>Whether the structured JSON <code class="inline-code">label</code> field exactly matches ground truth; equivalent to accuracy on balanced binary data.</p>
+        </div>
+        <div class="card">
+          <span class="metric-label">Metric: ECE</span>
+          <span class="metric">Calibration Error</span>
+          <p>Alignment between predicted confidence and empirical accuracy across confidence bins. Lower is better; zero is perfect calibration.</p>
+        </div>
+        <div class="card">
+          <span class="metric-label">Overhead</span>
+          <span class="metric">~13 ms</span>
+          <p>GenTel-Shield's own CPU-only inference latency &mdash; under 3% of typical end-to-end request latency.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="reproduce">
+    <div class="container">
+      <span class="eyebrow-light">Reproducibility</span>
+      <h2>Run the evaluation yourself</h2>
+      <p class="lede">
+        The full experiment pipeline, guard prompts, balanced datasets, and aggregation scripts
+        are released in the companion repository.
+      </p>
+      <pre><code>pip install -r requirements.txt
+
+python scripts/experiment.py --backend azure --mode guard --gentel true \
+  --guard-prompt prompts/GuardPrompt_calibrated.txt --limit 100 --seed 42 \
+  --output-dir runs_gts_seed42 \
+  --datasets data/ATS_Customer_Support_500_balanced.csv \
+             data/ATS_Ecommerce_500_balanced.csv \
+             data/ATS_General_Knowledge_Rules_500_balanced.csv</code></pre>
+      <div class="note-box">
+        See the <a href="https://github.com/Aisuko/secure-llm-calibration#readme" target="_blank" rel="noopener">repository README</a>
+        for the full reproduction steps covering the main results, ablation study, hyperparameter
+        study, and latency benchmark.
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="citation">
+    <div class="container">
+      <span class="eyebrow-light">Citation</span>
+      <h2>Cite this work</h2>
+      <p class="lede">
+        This manuscript is currently under review. Full citation details (authors, venue, volume,
+        and page numbers) will be added here once the paper is published.
+      </p>
+      <pre><code>@article{trustworthy_sme_rag,
+  title   = {Trustworthy Deployment of LLM-Based RAG Systems for Small Businesses:
+             A Security and Confidence-Aware Framework},
+  note    = {Manuscript under review. Citation details to be updated upon publication.},
+  url     = {https://github.com/Aisuko/secure-llm-calibration}
+}</code></pre>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div>&copy; 2026 &mdash; Code released under the MIT License.</div>
+    <div class="footer-links">
+      <a href="https://github.com/Aisuko/secure-llm-calibration" target="_blank" rel="noopener">GitHub Repository</a>
+      <a href="https://github.com/Aisuko/secure-llm-calibration/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      <a href="#top">Back to top</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/petals.js"></script>
+</body>
+</html>

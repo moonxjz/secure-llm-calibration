@@ -156,11 +156,31 @@ python scripts/experiment.py --backend azure --azure-models gpt-4.1 --mode guard
 
 ---
 
+## Latency / Deployment Overhead
+
+Measures sequential (non-concurrent), per-request end-to-end latency for the four
+methods above, to quantify the response-time cost of the layered defences and
+structured JSON output. Uses 100 stratified rows/seed on ATS-CS, seeds {42, 1337, 2026},
+GPT-4.1-mini and GPT-4.1. Also isolates GenTel-Shield's own local inference time
+(CPU-only) from the LLM API call.
+
+```bash
+python scripts/latency_benchmark.py --output-dir results/latency_raw
+```
+
+Key finding: GenTel-Shield's own inference adds ~13 ms/request (CPU-only), under 3% of
+typical end-to-end latency; the guard prompt's longer system prompt and structured
+output requirement showed no measurable latency penalty relative to the unguarded
+baseline, with observed differences within normal API request-to-request variance.
+
+---
+
 ## Key Files
 
 | File | Description |
 |---|---|
 | `scripts/experiment.py` | Main evaluation entrypoint |
+| `scripts/latency_benchmark.py` | Sequential per-request latency benchmark for the layered defences |
 | `scripts/gentelshield.py` | GenTel-Shield wrapper (returns attack probability for ECE) |
 | `scripts/aggregate_results.py` | Compute mean ± std across seeds |
 | `scripts/download_hf_datasets.py` | Download HF-D and HF-M datasets |
